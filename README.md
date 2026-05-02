@@ -26,8 +26,6 @@ Comprehensive project documentation is available in the `docs/` directory:
 *   [Software Requirements Specification (SRS)](docs/02_SRS_event_sourced_financial_ledger.md)
 *   [High-Level Design (HLD)](docs/03_HLD_event_sourced_financial_ledger.md)
 *   [Agile Delivery Plan (ADP)](docs/04_ADP_event_sourced_financial_ledger.md)
-*   [Product Backlog (User Stories)](docs/04_backlog_user_stories.md)
-*   [Sprint Plan & Release Strategy](docs/05_sprint_plan_release_strategy.md)
 
 ## Future Enhancements
 
