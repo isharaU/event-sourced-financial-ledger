@@ -30,6 +30,7 @@
         <module>domain</module>
         <module>event-store</module>
         <module>projection-handler</module>
+        <module>shared-contracts</module>
     </modules>
 
 </project>
