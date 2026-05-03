@@ -26,6 +26,7 @@
 
     <modules>
         <module>command-api</module>
+        <module>query-api</module>
     </modules>
 
 </project>
