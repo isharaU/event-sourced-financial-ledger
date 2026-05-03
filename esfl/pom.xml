@@ -28,6 +28,7 @@
         <module>command-api</module>
         <module>query-api</module>
         <module>domain</module>
+        <module>event-store</module>
     </modules>
 
 </project>
