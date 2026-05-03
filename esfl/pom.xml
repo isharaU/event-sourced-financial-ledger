@@ -12,12 +12,12 @@
     </parent>
 
     <groupId>com.ledger.financial.sourced.event</groupId>
-    <artifactId>bank</artifactId>
+    <artifactId>esfl</artifactId>
     <version>0.0.1-SNAPSHOT</version>
 
     <packaging>pom</packaging>
 
-    <name>bank</name>
+    <name>esfl</name>
     <description>Root project for CQRS multi-module architecture</description>
 
     <properties>
@@ -29,6 +29,7 @@
         <module>query-api</module>
         <module>domain</module>
         <module>event-store</module>
+        <module>projection-handler</module>
     </modules>
 
 </project>
