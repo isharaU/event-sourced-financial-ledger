@@ -1,0 +1,150 @@
+version: "3.9"
+
+services:
+  # ---------------------------
+  # PostgreSQL - WRITE DB
+  # ---------------------------
+  postgres-write:
+    image: postgres:15.6
+    container_name: postgres-write
+    network_mode: host
+    environment:
+      POSTGRES_DB: app_db
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: password
+    command: -p 5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app_user -p 5432"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------
+  # PostgreSQL - READ DB
+  # ---------------------------
+  postgres-read:
+    image: postgres:15.6
+    container_name: postgres-read
+    network_mode: host
+    environment:
+      POSTGRES_DB: app_db
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: password
+    command: -p 5433
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app_user -p 5433"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------
+  # Kafka Broker 1
+  # ---------------------------
+  kafka-1:
+    image: apache/kafka:4.0.2
+    container_name: kafka-1
+    network_mode: host
+    environment:
+      - KAFKA_NODE_ID=1
+      - KAFKA_PROCESS_ROLES=broker,controller
+      - KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
+      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@localhost:9093,2@localhost:9096,3@localhost:9099
+      - CLUSTER_ID=4f-mjlNkTs6UpOd-S_u4mQ
+      - KAFKA_LOG_DIRS=/tmp/kraft-combined-logs
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------
+  # Kafka Broker 2
+  # ---------------------------
+  kafka-2:
+    image: apache/kafka:4.0.2
+    container_name: kafka-2
+    network_mode: host
+    depends_on:
+      - kafka-1
+    environment:
+      - KAFKA_NODE_ID=2
+      - KAFKA_PROCESS_ROLES=broker,controller
+      - KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9094,CONTROLLER://0.0.0.0:9096
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9094
+      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@localhost:9093,2@localhost:9096,3@localhost:9099
+      - CLUSTER_ID=4f-mjlNkTs6UpOd-S_u4mQ
+      - KAFKA_LOG_DIRS=/tmp/kraft-combined-logs
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9094 --list || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------
+  # Kafka Broker 3
+  # ---------------------------
+  kafka-3:
+    image: apache/kafka:4.0.2
+    container_name: kafka-3
+    network_mode: host
+    depends_on:
+      - kafka-1
+    environment:
+      - KAFKA_NODE_ID=3
+      - KAFKA_PROCESS_ROLES=broker,controller
+      - KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9095,CONTROLLER://0.0.0.0:9099
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9095
+      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@localhost:9093,2@localhost:9096,3@localhost:9099
+      - CLUSTER_ID=4f-mjlNkTs6UpOd-S_u4mQ
+      - KAFKA_LOG_DIRS=/tmp/kraft-combined-logs
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9095 --list || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------
+  # Schema Registry
+  # ---------------------------
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.6.1
+    container_name: schema-registry
+    network_mode: host
+    depends_on:
+      - kafka-1
+      - kafka-2
+      - kafka-3
+    environment:
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://localhost:9092,PLAINTEXT://localhost:9094,PLAINTEXT://localhost:9095
+      SCHEMA_REGISTRY_HOST_NAME: localhost
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/subjects"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------
+  # Topic Seeder
+  # ---------------------------
+  kafka-init:
+    image: apache/kafka:4.0.2
+    container_name: kafka-init
+    network_mode: host
+    depends_on:
+      kafka-1:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "-c"]
+    command: |
+      echo 'Creating Kafka topics...'
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --if-not-exists --topic account-events --partitions 3 --replication-factor 3
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --if-not-exists --topic transfer-saga-events --partitions 3 --replication-factor 3
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --if-not-exists --topic account-events-dlq --partitions 3 --replication-factor 3
+      echo 'Topics created.'
