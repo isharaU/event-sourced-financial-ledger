@@ -1,4 +1,4 @@
-package com.ledger.financial.sourced.event.event_store.config;
+package com.ledger.financial.sourced.event.query_api.config;
 
 import javax.sql.DataSource;
 

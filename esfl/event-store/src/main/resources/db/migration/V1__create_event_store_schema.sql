@@ -136,7 +136,7 @@ CREATE TABLE IF NOT EXISTS saga_state (
     source_account_id      UUID            NOT NULL,
     destination_account_id UUID            NOT NULL,
     amount                 BIGINT          NOT NULL,
-    currency               VARCHAR(3)      NOT NULL DEFAULT 'USD',
+    currency               VARCHAR(3)      NOT NULL DEFAULT 'LKR',
     step                   VARCHAR(30)     NOT NULL,
     status                 VARCHAR(20)     NOT NULL,
     version                INTEGER         NOT NULL DEFAULT 0,
