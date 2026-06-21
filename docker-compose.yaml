@@ -1,4 +1,3 @@
-version: "3.9"
 
 services:
   # ---------------------------
@@ -134,17 +133,52 @@ services:
   # ---------------------------
   # Topic Seeder
   # ---------------------------
+  # Run with: docker compose --profile init up kafka-init
   kafka-init:
     image: apache/kafka:4.0.2
     container_name: kafka-init
     network_mode: host
+    restart: "no"
+    profiles:
+      - init
+    # All three brokers must be healthy before topics can be created with replication-factor=3.
     depends_on:
       kafka-1:
         condition: service_healthy
-    entrypoint: ["/bin/bash", "-c"]
-    command: |
-      echo 'Creating Kafka topics...'
-      /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --if-not-exists --topic account-events --partitions 3 --replication-factor 3
-      /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --if-not-exists --topic transfer-saga-events --partitions 3 --replication-factor 3
-      /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --if-not-exists --topic account-events-dlq --partitions 3 --replication-factor 3
-      echo 'Topics created.'
+      kafka-2:
+        condition: service_healthy
+      kafka-3:
+        condition: service_healthy
+    command:
+      - /bin/bash
+      - -c
+      - |
+        set -e
+        echo 'Creating Kafka topics...'
+
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --if-not-exists \
+          --topic account-events \
+          --partitions 12 \
+          --replication-factor 3 \
+          --config min.insync.replicas=2 \
+          --config retention.ms=7776000000
+
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --if-not-exists \
+          --topic transfer-saga-events \
+          --partitions 12 \
+          --replication-factor 3 \
+          --config min.insync.replicas=2 \
+          --config retention.ms=2592000000
+
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --if-not-exists \
+          --topic account-events-dlq \
+          --partitions 1 \
+          --replication-factor 3 \
+          --config min.insync.replicas=2 \
+          --config retention.ms=31536000000
+
+        echo 'Kafka topics created. Verifying topic configurations...'
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --describe --topic account-events
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --describe --topic transfer-saga-events
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --describe --topic account-events-dlq
+        echo 'Verification complete.'
