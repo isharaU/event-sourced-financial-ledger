@@ -22,13 +22,20 @@
 			<optional>true</optional>
 		</dependency>
 
+		<dependency>
+			<groupId>com.ledger.financial.sourced.event</groupId>
+			<artifactId>shared-contracts</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+
 		<!-- JUnit 5 for unit testing – no Spring test context needed -->
 		<dependency>
-			<groupId>org.junit.jupiter</groupId>
-			<artifactId>junit-jupiter</artifactId>
-			<scope>test</scope>
-		</dependency>
-	</dependencies>
+				<groupId>org.junit.jupiter</groupId>
+				<artifactId>junit-jupiter</artifactId>
+				<scope>test</scope>
+			</dependency>
+		</dependencies>
 
 	<build>
 		<plugins>
