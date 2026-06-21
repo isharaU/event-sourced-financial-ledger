@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import com.ledger.financial.sourced.event.contracts.AccountClosed;
 import com.ledger.financial.sourced.event.contracts.AccountCreated;
 import com.ledger.financial.sourced.event.contracts.AccountSuspended;
+import com.ledger.financial.sourced.event.contracts.DomainEvent;
 import com.ledger.financial.sourced.event.contracts.FundsDeposited;
 import com.ledger.financial.sourced.event.contracts.FundsWithdrawn;
 import com.ledger.financial.sourced.event.domain.exception.AccountClosureNotAllowedException;
@@ -45,6 +46,14 @@ class AccountTest {
         assertEquals(ownerId, event.ownerId());
         assertEquals(CURRENCY, event.currency());
         assertEquals(ACCOUNT_CREATED, event.eventType());
+
+        newAccount.apply(event);
+        assertEquals(accountId, newAccount.getAccountId());
+        assertEquals(ownerId, newAccount.getOwnerId());
+        assertEquals(CURRENCY, newAccount.getCurrency());
+        assertEquals(AccountStatus.ACTIVE, newAccount.getStatus());
+        assertEquals(0L, newAccount.getBalance());
+        assertEquals(1, newAccount.getAggregateVersion());
     }
 
     @Test
@@ -167,5 +176,33 @@ class AccountTest {
         account.apply(new AccountCreated(UUID.randomUUID(), ACCOUNT_CREATED, accountId, 1, Instant.now(), 1, ownerId, CURRENCY));
         account.apply(account.close());
         assertThrows(AccountNotActiveException.class, () -> account.suspend());
+    }
+
+    @Test
+    void shouldIgnoreUnknownDomainEventOnApply() {
+        DomainEvent dummyEvent = new DomainEvent() {
+            @Override
+            public UUID id() { return UUID.randomUUID(); }
+            @Override
+            public String eventType() { return "UnknownEvent"; }
+            @Override
+            public UUID aggregateId() { return accountId; }
+            @Override
+            public int aggregateVersion() { return 99; }
+            @Override
+            public Instant occurredAt() { return Instant.now(); }
+            @Override
+            public int eventVersion() { return 1; }
+        };
+        
+        int oldVersion = account.getAggregateVersion();
+        AccountStatus oldStatus = account.getStatus();
+        long oldBalance = account.getBalance();
+        
+        account.apply(dummyEvent);
+        
+        assertEquals(99, account.getAggregateVersion());
+        assertEquals(oldStatus, account.getStatus());
+        assertEquals(oldBalance, account.getBalance());
     }
 }
