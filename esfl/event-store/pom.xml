@@ -51,6 +51,12 @@
 			<version>${project.version}</version>
 		</dependency>
 
+		<dependency>
+			<groupId>com.ledger.financial.sourced.event</groupId>
+			<artifactId>domain</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
 		<!-- Spring Retry for optimistic locking -->
 		<dependency>
 			<groupId>org.springframework.retry</groupId>
@@ -84,6 +90,11 @@
 			<groupId>org.testcontainers</groupId>
 			<artifactId>postgresql</artifactId>
 			<version>1.19.7</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.datatype</groupId>
+			<artifactId>jackson-datatype-jsr310</artifactId>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

@@ -180,20 +180,9 @@ class AccountTest {
 
     @Test
     void shouldIgnoreUnknownDomainEventOnApply() {
-        DomainEvent dummyEvent = new DomainEvent() {
-            @Override
-            public UUID id() { return UUID.randomUUID(); }
-            @Override
-            public String eventType() { return "UnknownEvent"; }
-            @Override
-            public UUID aggregateId() { return accountId; }
-            @Override
-            public int aggregateVersion() { return 99; }
-            @Override
-            public Instant occurredAt() { return Instant.now(); }
-            @Override
-            public int eventVersion() { return 1; }
-        };
+        DomainEvent dummyEvent = new com.ledger.financial.sourced.event.contracts.FundsDebited(
+                UUID.randomUUID(), "FundsDebited", accountId, 99, Instant.now(), 1, 100L, UUID.randomUUID()
+        );
         
         int oldVersion = account.getAggregateVersion();
         AccountStatus oldStatus = account.getStatus();
